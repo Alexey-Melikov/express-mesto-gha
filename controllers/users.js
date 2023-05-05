@@ -62,14 +62,18 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   userSchema
-    .findByIdAndUpdate(req.user._id, { name, about }, { new: true })
+    .findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      { new: true, runValidators: true },
+    )
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err.name === "CastError") {
-        return res.status(ERROR_CODE_INCORRECT_DATA).send({
-          message: "Incorrect data was sent when updating the profile..",
-        });
+      if (err.name === "ValidationError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was sent when updating the profile." });
       }
       if (err.name === "DocumentNotFoundError") {
         return res
@@ -85,7 +89,11 @@ module.exports.updateUser = (req, res) => {
 module.exports.updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
   userSchema
-    .findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+    .findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      { new: true, runValidators: true },
+    )
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
