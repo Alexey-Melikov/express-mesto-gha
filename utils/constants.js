@@ -1,12 +1,6 @@
-const ERROR_CODE_INCORRECT_DATA = {
-  code: 400,
-  message: "Переданы некорректные данные",
-};
-const ERROR_CODE_NOT_FOUND = { code: 404, message: "Данные не найдены" };
-const ERROR_CODE_DEFAULT = {
-  code: 500,
-  message: "На сервере произошла ошибка!",
-};
+const ERROR_CODE_INCORRECT_DATA = 400;
+const ERROR_CODE_NOT_FOUND = 404;
+const ERROR_CODE_DEFAULT = 500;
 
 module.exports = {
   ERROR_CODE_DEFAULT,

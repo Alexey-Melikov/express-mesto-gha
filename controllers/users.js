@@ -12,7 +12,9 @@ module.exports.getUsers = (req, res) => {
     .find({})
     .then((users) => res.send(users))
     .catch((err) => {
-      res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 
@@ -22,14 +24,19 @@ module.exports.getUser = (req, res) => {
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === "CastError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was passed." });
+      }
       if (err.name === "DocumentNotFoundError") {
         return res
-          .status(ERROR_CODE_NOT_FOUND.code)
-          .send(ERROR_CODE_NOT_FOUND.message);
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "User with specified id was not found." });
       }
       return res
-        .status(ERROR_CODE_DEFAULT.code)
-        .send(ERROR_CODE_DEFAULT.message);
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -43,12 +50,12 @@ module.exports.createUser = (req, res) => {
     .catch((err) => {
       if (err.name === "ValidationError") {
         return res
-          .status(ERROR_CODE_INCORRECT_DATA.code)
-          .send(ERROR_CODE_INCORRECT_DATA.message);
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was passed during user creation." });
       }
       return res
-        .status(ERROR_CODE_DEFAULT.code)
-        .send(ERROR_CODE_DEFAULT.message);
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 
@@ -59,14 +66,19 @@ module.exports.updateUser = (req, res) => {
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === "CastError") {
+        return res.status(ERROR_CODE_INCORRECT_DATA).send({
+          message: "Incorrect data was sent when updating the profile..",
+        });
+      }
       if (err.name === "DocumentNotFoundError") {
         return res
-          .status(ERROR_CODE_NOT_FOUND.code)
-          .send(ERROR_CODE_NOT_FOUND.message);
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "User with specified id was not found." });
       }
       return res
-        .status(ERROR_CODE_DEFAULT.code)
-        .send(ERROR_CODE_DEFAULT.message);
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 
@@ -77,14 +89,19 @@ module.exports.updateUserAvatar = (req, res) => {
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === "CastError") {
+        return res.status(ERROR_CODE_INCORRECT_DATA).send({
+          message: "Incorrect data was sent when updating the avatar.",
+        });
+      }
       if (err.name === "DocumentNotFoundError") {
         return res
-          .status(ERROR_CODE_NOT_FOUND.code)
-          .send(ERROR_CODE_NOT_FOUND.message);
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "User with specified id was not found." });
       }
       return res
-        .status(ERROR_CODE_DEFAULT.code)
-        .send(ERROR_CODE_DEFAULT.message);
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 /* eslint-enable no-unused-vars */

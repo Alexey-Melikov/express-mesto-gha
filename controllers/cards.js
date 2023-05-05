@@ -12,7 +12,14 @@ module.exports.getCards = (req, res) => {
     .find({})
     .then((cards) => res.send(cards))
     .catch((err) => {
-      res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      if (err.name === "CastError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was passed." });
+      }
+      return res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -26,10 +33,12 @@ module.exports.createCard = (req, res) => {
     .catch((err) => {
       if (err.name === "ValidationError") {
         return res
-          .status(ERROR_CODE_INCORRECT_DATA.code)
-          .send(ERROR_CODE_INCORRECT_DATA.message);
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was passed during card creation." });
       }
-      return res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      return res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -41,10 +50,19 @@ module.exports.deleteCard = (req, res) => {
       res.send(card);
     })
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(ERROR_CODE_NOT_FOUND.code).send(ERROR_CODE_NOT_FOUND.message);
+      if (err.name === "CastError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was passed." });
       }
-      return res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      if (err.name === "DocumentNotFoundError") {
+        return res
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "Incorrect data was sent when deleting the card." });
+      }
+      return res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -58,10 +76,19 @@ module.exports.likeCard = (req, res) => {
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(ERROR_CODE_NOT_FOUND.code).send(ERROR_CODE_NOT_FOUND.code);
+      if (err.name === "CastError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was sent to set/unlike." });
       }
-      return res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      if (err.name === "DocumentNotFoundError") {
+        return res
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "A non-existent id of the card was passed." });
+      }
+      return res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -69,16 +96,25 @@ module.exports.dislikeCard = (req, res) => {
   cardSchema
     .findByIdAndUpdate(
       req.params.cardId,
-      { $pull: { likes: req.user._id } }, // убрать _id из массива
+      { $pull: { likes: req.user._id } },
       { new: true },
     )
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(ERROR_CODE_NOT_FOUND.code).send(ERROR_CODE_NOT_FOUND.message);
+      if (err.name === "CastError") {
+        return res
+          .status(ERROR_CODE_INCORRECT_DATA)
+          .send({ message: "Incorrect data was sent to set/unlike." });
       }
-      return res.status(ERROR_CODE_DEFAULT.code).send(ERROR_CODE_DEFAULT.message);
+      if (err.name === "DocumentNotFoundError") {
+        return res
+          .status(ERROR_CODE_NOT_FOUND)
+          .send({ message: "A non-existent id of the card was passed." });
+      }
+      return res
+        .status(ERROR_CODE_DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
