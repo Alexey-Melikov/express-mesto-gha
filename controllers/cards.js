@@ -1,25 +1,22 @@
-/* eslint-disable no-unused-vars */
+const mongoose = require('mongoose');
+
 const {
   ERROR_CODE_DEFAULT,
   ERROR_CODE_INCORRECT_DATA,
   ERROR_CODE_NOT_FOUND,
-} = require("../utils/constants");
+} = require('../utils/constants');
 
-const cardSchema = require("../models/card");
+const cardSchema = require('../models/card');
 
 module.exports.getCards = (req, res) => {
   cardSchema
     .find({})
+    .populate(['owner', 'likes'])
     .then((cards) => res.send(cards))
-    .catch((err) => {
-      if (err.name === "CastError") {
-        return res
-          .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: "Incorrect data was passed." });
-      }
-      return res
+    .catch(() => {
+      res
         .status(ERROR_CODE_DEFAULT)
-        .send({ message: "An error has occurred on the server." });
+        .send({ message: 'An error has occurred on the server.' });
     });
 };
 
@@ -28,17 +25,17 @@ module.exports.createCard = (req, res) => {
   cardSchema
     .create({ name, link, owner: req.user._id })
     .then((card) => {
-      res.send(card);
+      res.status(201).send(card);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
+      if (err instanceof mongoose.Error.ValidationError) {
         return res
           .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: "Incorrect data was passed during card creation." });
+          .send({ message: 'Incorrect data was passed during card creation.' });
       }
       return res
         .status(ERROR_CODE_DEFAULT)
-        .send({ message: "An error has occurred on the server." });
+        .send({ message: 'An error has occurred on the server.' });
     });
 };
 
@@ -50,19 +47,19 @@ module.exports.deleteCard = (req, res) => {
       res.send(card);
     })
     .catch((err) => {
-      if (err.name === "CastError") {
+      if (err instanceof mongoose.Error.CastError) {
         return res
           .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: "Incorrect data was passed." });
+          .send({ message: 'Incorrect data was passed.' });
       }
-      if (err.name === "DocumentNotFoundError") {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: "Incorrect data was sent when deleting the card." });
+          .send({ message: 'Incorrect data was sent when deleting the card.' });
       }
       return res
         .status(ERROR_CODE_DEFAULT)
-        .send({ message: "An error has occurred on the server." });
+        .send({ message: 'An error has occurred on the server.' });
     });
 };
 
@@ -76,19 +73,19 @@ module.exports.likeCard = (req, res) => {
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === "CastError") {
+      if (err instanceof mongoose.Error.CastError) {
         return res
           .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: "Incorrect data was sent to set/unlike." });
+          .send({ message: 'Incorrect data was sent to set/unlike.' });
       }
-      if (err.name === "DocumentNotFoundError") {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: "A non-existent id of the card was passed." });
+          .send({ message: 'A non-existent id of the card was passed.' });
       }
       return res
         .status(ERROR_CODE_DEFAULT)
-        .send({ message: "An error has occurred on the server." });
+        .send({ message: 'An error has occurred on the server.' });
     });
 };
 
@@ -102,20 +99,18 @@ module.exports.dislikeCard = (req, res) => {
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === "CastError") {
+      if (err instanceof mongoose.Error.CastError) {
         return res
           .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: "Incorrect data was sent to set/unlike." });
+          .send({ message: 'Incorrect data was sent to set/unlike.' });
       }
-      if (err.name === "DocumentNotFoundError") {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: "A non-existent id of the card was passed." });
+          .send({ message: 'A non-existent id of the card was passed.' });
       }
       return res
         .status(ERROR_CODE_DEFAULT)
-        .send({ message: "An error has occurred on the server." });
+        .send({ message: 'An error has occurred on the server.' });
     });
 };
-
-/* eslint-enable no-unused-vars */
