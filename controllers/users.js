@@ -11,6 +11,7 @@ const ConflictError = require('../errors/conflictError');
 const IncorrectError = require('../errors/incorrectError');
 
 module.exports.getUserInfo = (req, res, next) => {
+  console.log('test');
   userSchema
     .findById(req.params._id)
     .orFail()
@@ -38,9 +39,6 @@ module.exports.getUser = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return next(new IncorrectError('Incorrect data was passed.'));
-        // return res
-        //   .status(ERROR_CODE_INCORRECT_DATA)
-        //   .send({ message: 'Incorrect data was passed.' });
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         return next(new NotFoundError('User with specified id was not found.'));

@@ -14,7 +14,7 @@ const {
 } = require('../middlewares/joi');
 
 userRouter.get('/', getUsers);
-userRouter.get('/users/me', getUserInfo);
+userRouter.get('/me', getUserInfo);
 userRouter.get('/:userId', getUser);
 userRouter.patch('/me', updateUserJoi, updateUser);
 userRouter.patch('/me/avatar', updateUserAvatarJoi, updateUserAvatar);
