@@ -1,66 +1,86 @@
 const mongoose = require('mongoose');
-const {
-  ERROR_CODE_DEFAULT,
-  ERROR_CODE_INCORRECT_DATA,
-  ERROR_CODE_NOT_FOUND,
-} = require('../utils/constants');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const saltRounds = 10;
 
 const userSchema = require('../models/user');
+const NotFoundError = require('../errors/notFoundError');
+const Unauthorized = require('../errors/UnauthorizedError');
+const ConflictError = require('../errors/conflictError');
+const IncorrectError = require('../errors/incorrectError');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUserInfo = (req, res, next) => {
   userSchema
-    .find({})
-    .then((users) => res.send(users))
-    .catch(() => {
-      res
-        .status(ERROR_CODE_DEFAULT)
-        .send({ message: 'An error has occurred on the server' });
+    .findById(req.params._id)
+    .orFail()
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('User with specified id was not found.'));
+      }
+      return next(err);
     });
 };
 
-module.exports.getUser = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
+  userSchema
+    .find({})
+    .then((users) => res.send(users))
+    .catch(next);
+};
+
+module.exports.getUser = (req, res, next) => {
   userSchema
     .findById(req.params.userId)
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res
-          .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: 'Incorrect data was passed.' });
+        return next(new IncorrectError('Incorrect data was passed.'));
+        // return res
+        //   .status(ERROR_CODE_INCORRECT_DATA)
+        //   .send({ message: 'Incorrect data was passed.' });
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        console.log(mongoose.Error);
-        return res
-          .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'User with specified id was not found.' });
+        return next(new NotFoundError('User with specified id was not found.'));
       }
-      return res
-        .status(ERROR_CODE_DEFAULT)
-        .send({ message: 'An error has occurred on the server.' });
+      return next(err);
     });
 };
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  userSchema
-    .create({ name, about, avatar })
+module.exports.createUser = (req, res, next) => {
+  const {
+    name,
+    about,
+    avatar,
+    email,
+    password,
+  } = req.body;
+  bcrypt.hash(password, saltRounds)
+    .then((hash) => userSchema
+      .create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      }))
     .then((user) => {
       res.status(201).send(user);
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res
-          .status(ERROR_CODE_INCORRECT_DATA)
-          .send({ message: 'Incorrect data was passed during user creation.' });
+      if (err.code === 11000) {
+        return next(new ConflictError('user with this email is already registered.'));
       }
-      return res
-        .status(ERROR_CODE_DEFAULT)
-        .send({ message: 'An error has occurred on the server' });
+      if (err instanceof mongoose.Error.ValidationError) {
+        return next(new IncorrectError('Incorrect data was passed.'));
+      }
+      return next(err);
     });
 };
 
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   userSchema
     .findByIdAndUpdate(
@@ -72,22 +92,16 @@ module.exports.updateUser = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(ERROR_CODE_INCORRECT_DATA).send({
-          message: 'Incorrect data was sent when updating the profile.',
-        });
+        return next(new IncorrectError('Incorrect data was passed.'));
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res
-          .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'User with specified id was not found.' });
+        return next(new NotFoundError('User with specified id was not found.'));
       }
-      return res
-        .status(ERROR_CODE_DEFAULT)
-        .send({ message: 'An error has occurred on the server' });
+      return next(err);
     });
 };
 
-module.exports.updateUserAvatar = (req, res) => {
+module.exports.updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
   userSchema
     .findByIdAndUpdate(
@@ -99,17 +113,37 @@ module.exports.updateUserAvatar = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(ERROR_CODE_INCORRECT_DATA).send({
-          message: 'Incorrect data was sent when updating the avatar.',
-        });
+        return next(new IncorrectError('Incorrect data was sent when updating the avatar.'));
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res
-          .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'User with specified id was not found.' });
+        return next(new NotFoundError('User with specified id was not found.'));
       }
-      return res
-        .status(ERROR_CODE_DEFAULT)
-        .send({ message: 'An error has occurred on the server' });
+      return next(err);
+    });
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  userSchema.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        return next(new Unauthorized('wrong email or password'));
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return next(new Unauthorized('wrong email or password'));
+          }
+          const token = jwt.sign(
+            { _id: user._id },
+            'some-secret-key',
+            { expiresIn: '7d' },
+          );
+          return res.cookie('jwt', token, {
+            maxAge: 3600000 * 24 * 7,
+            httpOnly: true,
+            sameSite: true,
+          }).send({ token });
+        }).catch(next);
     });
 };
