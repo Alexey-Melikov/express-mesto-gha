@@ -67,7 +67,8 @@ module.exports.createUser = (req, res, next) => {
         password: hash,
       }))
     .then((user) => {
-      res.status(201).send(user);
+      const userWithOutPassword = user.toObject({ useProjection: true });
+      res.status(201).send(userWithOutPassword);
     })
     .catch((err) => {
       if (err.code === 11000) {
