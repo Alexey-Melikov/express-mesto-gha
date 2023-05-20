@@ -11,9 +11,8 @@ const ConflictError = require('../errors/conflictError');
 const IncorrectError = require('../errors/incorrectError');
 
 module.exports.getUserInfo = (req, res, next) => {
-  console.log('test');
   userSchema
-    .findById(req.params._id)
+    .findById(req.user._id)
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
