@@ -11,11 +11,12 @@ const {
 const {
   updateUserJoi,
   updateUserAvatarJoi,
+  getUserJoi,
 } = require('../middlewares/joi');
 
 userRouter.get('/', getUsers);
 userRouter.get('/me', getUserInfo);
-userRouter.get('/:userId', getUser);
+userRouter.get('/:userId', getUserJoi, getUser);
 userRouter.patch('/me', updateUserJoi, updateUser);
 userRouter.patch('/me/avatar', updateUserAvatarJoi, updateUserAvatar);
 

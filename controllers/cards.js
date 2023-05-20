@@ -31,24 +31,19 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   const currentUser = req.user._id;
+  const { cardId } = req.params;
   cardSchema
-    .findById(req.params.cardId)
-    .orFail()
+    .findById(cardId)
+    .orFail(new NotFoundError('Incorrect data was sent when deleting the card.'))
     .then((card) => {
       if (currentUser !== card.owner.toString()) {
-        throw new ForbiddenError('No rights to delete card.');
+        return next(new ForbiddenError('No rights to delete card.'));
       }
-      return card.findBIdAndDelete(card._id);
+      return card;
     })
-    .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        return next(new IncorrectError('Incorrect data was passed.'));
-      }
-      if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return next(new NotFoundError('Incorrect data was sent when deleting the card.'));
-      }
-      return next(err);
-    });
+    .then((card) => cardSchema.deleteOne(card))
+    .then(() => res.status(200).send({ message: 'card deletion was successful' }))
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => {
