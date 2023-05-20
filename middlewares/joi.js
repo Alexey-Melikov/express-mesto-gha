@@ -2,7 +2,8 @@ const { celebrate, Joi } = require('celebrate');
 
 const getUserJoi = celebrate({
   params: Joi.object().keys({
-    id: Joi.string().alphanum().hex().length(24),
+    userId: Joi.string().hex().required().alphanum()
+      .length(24),
   }),
 });
 
